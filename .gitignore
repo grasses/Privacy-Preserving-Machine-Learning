@@ -1,0 +1,10 @@
+*.zip
+*.gz
+.DS_Store
+*.csv
+*.pyc
+deploy*
+.idea
+*output
+*__pycache__
+*test
