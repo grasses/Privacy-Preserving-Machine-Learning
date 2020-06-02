@@ -5,7 +5,11 @@ __author__ = 'homeway'
 __copyright__ = 'Copyright © 2020/5/31, homeway'
 
 import os
+import random
 import torch
+random.seed(100)
+torch.manual_seed(100)
+torch.cuda.manual_seed(100)
 
 class Conf():
     ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
@@ -19,20 +23,22 @@ class Conf():
     output_path = os.path.join(ROOT, "output")
 
     # machine learning
-    batch_size = 1000
+    batch_size = 200
     learning_rate = 0.001
+    num_features = 23
+    num_classes = 2
 
     # federated learning
     num_round = 20
     num_clients = 10
-    num_classes = 2
-    per_round = 10
+    num_per_round = 10
     fed_epoch = 10
-    fed_learning_rate = 0.001
+    fed_learning_rate = 0.0005
     fed_clients = {}
     fed_aggregate = "avg"
+    fed_partition = "horizontal"    # data partition: horizontal/vertical
 
     # syft
     syft_hook = None
     syft_clients = {}
-    syft_crypto_provider = {}
+    syft_crypto_provider = None

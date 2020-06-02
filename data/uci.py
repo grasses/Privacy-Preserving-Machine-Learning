@@ -5,15 +5,18 @@ __author__ = 'homeway'
 __copyright__ = 'Copyright © 2020/5/30, homeway'
 
 import os
+import torch
 import numpy as np
 from utils.data import split_data
 from torch.utils.data import Dataset, DataLoader
 
 class UCIDataset(Dataset):
-    def __init__(self, x, y):
-        self.x = np.array(x, dtype=np.float32)
-        self.y = np.array(y, dtype=np.int64)
-
+    def __init__(self, x, y, worker=None):
+        self.x = torch.from_numpy(x).float()
+        self.y = torch.from_numpy(y).long()
+        if worker:
+            self.x = self.x.send(worker)
+            self.y = self.y.send(worker)
     def __getitem__(self, index):
         return self.x[index], self.y[index]
 
@@ -21,7 +24,7 @@ class UCIDataset(Dataset):
         return len(self.x)
 
 class Data():
-    def __init__(self, conf, user_list=[]):
+    def __init__(self, conf):
         self.conf = conf
         self.train_x = None
         self.train_y = None
@@ -30,14 +33,13 @@ class Data():
         self.splited_data = {}
         self.data_loader = {}
         self.test_loader = None
-        self.user_list = user_list
 
-    def load_data(self, sep=0.8):
+    def load_data(self, factor=0.8):
         raw_data = np.genfromtxt(os.path.join(self.conf.data_path, "index.csv"), delimiter=",")
         data = np.delete(raw_data, 0, axis=1)
 
         size = len(data)
-        train_size = int(size * sep)
+        train_size = int(size * factor)
         idx = np.random.choice(size, size, replace=False)
         data = data[idx]
 
@@ -52,13 +54,9 @@ class Data():
                                        num_classes=self.conf.num_classes)
 
         # build data loader & send to user
-        for uid, data in self.splited_data.items():
-            self.data_loader[uid] = DataLoader(UCIDataset(data[0], data[1]), batch_size=self.conf.batch_size, shuffle=True)
-
-            print("-> send data to:{}, size:{}".format(uid, len(data[0])))
-            for batch_idx, (data, target) in enumerate(self.data_loader[uid]):
-                data.send(self.conf.syft_clients[uid])
-                target.send(self.conf.syft_clients[uid])
+        for uid, item in self.splited_data.items():
+            print("-> send data to client:{}, size:{}".format(uid, len(item[1])))
+            self.data_loader[uid] = DataLoader(UCIDataset(item[0], item[1]), batch_size=self.conf.batch_size, shuffle=True)
 
         # build test loader
         self.test_loader = DataLoader(UCIDataset(self.test_x, self.test_y), batch_size=self.conf.batch_size, shuffle=False)

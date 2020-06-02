@@ -37,5 +37,5 @@ class Helper():
             res[key] = value.clone()
             for id in collection.keys():
                 res[key] += (1.0 * collection[id][key])
-            res[key] = 1.0 * (res[key].get().float_precision()) / size
+            res[key] = 1.0 * (res[key].float_precision()) / size
         return collections.OrderedDict(res)

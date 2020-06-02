@@ -49,16 +49,15 @@ class ModelBase(nn.Module):
                 yield params
 
 class Credit(ModelBase):
-    def __init__(self, input_dim, output_dim, name="", created_time=""):
+    def __init__(self, num_features, num_classes, name="", created_time=""):
         super(Credit, self).__init__(name, created_time)
         self.linear_blocks = nn.Sequential(
-            nn.Linear(input_dim, 64),
-            nn.Linear(64, 64),
+            nn.Linear(num_features, 64),
             nn.Dropout2d(0.2),
-            nn.Linear(64, output_dim)
+            nn.Linear(64, num_classes)
         )
 
     def forward(self, x):
-        logist = self.linear_blocks(x)
-        output = torch.sigmoid(logist)
-        return output
+        x = self.linear_blocks(x)
+        x = torch.sigmoid(x)
+        return x
