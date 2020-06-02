@@ -37,6 +37,12 @@ class Conf():
     fed_clients = {}
     fed_aggregate = "avg"
     fed_partition = "horizontal"    # data partition: horizontal/vertical
+    fed_horizontal = {
+
+    }
+    fed_vertical = {
+        "split": 10,
+    }
 
     # syft
     syft_hook = None

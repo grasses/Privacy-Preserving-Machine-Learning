@@ -32,3 +32,13 @@ def split_data(data, label, num_clients, num_classes, alpha=0.9):
                 data_splited[client][0] = np.concatenate((data_splited[client][0], sample_image), axis=0)
                 data_splited[client][1] = np.concatenate((data_splited[client][1], sample_label), axis=0)
     return data_splited
+
+
+class Compose(object):
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, x, y):
+        for t in self.transforms:
+            img, target = t(x, y)
+        return img, target
