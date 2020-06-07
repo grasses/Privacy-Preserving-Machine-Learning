@@ -57,9 +57,9 @@ class Data():
         self.test_loader = DataLoader(dataset, batch_size, shuffle=False)
 
     def split_vertical_data(self, args, batch_size=200):
-        train_x_A = self.train_x[args["split"]:]
-        train_x_B = self.train_x[:args["split"]]
-        train_y_A = self.train_y
+        train_x_A = self.train_x[:, args["split"]:]
+        train_x_B = self.train_x[:, :args["split"]]
+        train_y_A = np.reshape(self.train_y, [-1, 1])
         train_y_B = np.zeros(self.train_y.shape)
         self.splited_data = {
             0: (train_x_A, train_y_A),
@@ -81,6 +81,8 @@ class Data():
             print("-> send data to client:{}, size:{}".format(uid, len(item[1])))
             dataset = UCIDataset(item[0], item[1])
             self.data_loader[uid] = DataLoader(dataset, batch_size, shuffle=False) # keep False
+            # update num_steps/per round
+            self.conf.fed_vertical["num_steps"] = len(self.data_loader[uid])
 
         # build test loader
         self.test_loader = {}
@@ -109,6 +111,7 @@ class Data():
         if self.conf.fed_partition == "horizontal":
             self.split_horizontal_data(self.conf.num_clients, self.conf.num_classes, self.conf.batch_size)
         elif self.conf.fed_partition == "vertical":
+            print("-> vertically split data")
             self.split_vertical_data(self.conf.fed_vertical, self.conf.batch_size)
 
 

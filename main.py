@@ -8,11 +8,12 @@ import torch
 import syft as sy
 from utils.helper import Helper
 from data.uci import Data
-from utils.model import Credit as Model
+from fed.horizontal.adv_client import AdversaryClient
 
 def run_horizontal(conf, helper):
     from fed.horizontal.client import Client
     from fed.horizontal.server import Server
+    from model.horizontal.credit import Credit as Model
 
     # syft initial
     conf.syft_clients = {}
@@ -27,10 +28,13 @@ def run_horizontal(conf, helper):
 
     # federated client
     for uid in range(conf.num_clients):
-        conf.fed_clients[uid] = Client(uid, conf, data.data_loader[i])
+        if uid == 0:
+            conf.fed_clients[uid] = AdversaryClient(uid, conf, data.data_loader[i])
+        else:
+            conf.fed_clients[uid] = Client(uid, conf, data.data_loader[i])
 
     # federated server
-    server = Server(conf, data, Model(num_features=conf.num_features, num_classes=conf.num_classes))
+    server = Server(conf, data)
     server.run()
 
 def run_vertical(conf, helper):
@@ -38,25 +42,28 @@ def run_vertical(conf, helper):
         Follow paper `Private federated learning on vertically partitioned data via entity resolution and additively homomorphic encryption`
     '''
     from fed.vertical.client import Client
-    from fed.horizontal.server import Server
+    from fed.vertical.arbiter import Arbiter
 
     # syft initial
+    '''
     conf.num_clients = 2
     conf.syft_clients = {}
     conf.syft_hook = sy.TorchHook(torch)
     for i in range(conf.num_clients):
         conf.syft_clients[i] = sy.VirtualWorker(conf.syft_hook, id=str(i))
     conf.syft_crypto_provider = sy.VirtualWorker(conf.syft_hook, id="james")
+    '''
 
     # data initial
     data = Data(conf)
     data.load_data()
 
     # federated client
-    # TODO
+    for uid, party in conf.fed_vertical["party"].items():
+        conf.fed_clients[uid] = Client(uid, conf, data.data_loader[uid], party)
 
-    # federated server
-    server = Server(conf, data, Model(num_features=conf.num_features, num_classes=conf.num_classes))
+    # federated arbiter
+    server = Arbiter(conf, data)
     server.run()
 
 def main():

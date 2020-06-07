@@ -8,7 +8,7 @@ import copy
 import torch.optim as optim
 import torch.nn.functional as F
 from collections import OrderedDict
-from utils import Model
+from model.horizontal.credit import Credit as Model
 
 class Client():
     def __init__(self, uid, conf, data_loader):
@@ -19,7 +19,7 @@ class Client():
         self.init()
 
     def init(self):
-        self.model = Model(self.conf.num_features, self.conf.num_classes)
+        self.model = Model(self.conf.num_features, self.conf.num_classes).to(self.conf.device)
 
     def update(self, parameters):
         self.global_params = copy.deepcopy(parameters)
@@ -30,6 +30,7 @@ class Client():
         for e in range(self.conf.fed_epoch):
             train_loss, train_acc = 0, 0
             for step, (x, y) in enumerate(self.data_loader):
+                x, y = x.to(self.conf.device), y.to(self.conf.device)
                 self.optimizer.zero_grad()
                 logists = self.model(x)
                 loss = F.cross_entropy(logists, y)
@@ -41,10 +42,13 @@ class Client():
                 self.optimizer.step()
         print("-> client{:d} finish! train_loss={:.3f} train_acc={:.1f}%".format(
             self.uid,
-            train_loss,
+            train_loss / len(self.data_loader.dataset),
             100 * train_acc / len(self.data_loader.dataset))
         )
-        return self.encrypted_model(self.model)
+
+        if self.conf.fed_horizontal["encrypt_weight"]:
+            return self.encrypted_model(self.model)
+        return self.model.state_dict()
 
     def encrypted_model(self, model):
         spdz_weights = OrderedDict()

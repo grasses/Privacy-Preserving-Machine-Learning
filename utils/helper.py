@@ -1,3 +1,9 @@
+# !/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+__author__ = 'homeway'
+__copyright__ = 'Copyright © 2020/5/31, homeway'
+
 import os
 import copy
 import collections
@@ -25,7 +31,7 @@ class Helper():
                 os.makedirs(path)
         return self.conf
 
-    def weights_avg(self, model, collection):
+    def weights_avg(self, model, collection, fix_precision=False):
         '''
         :param model: dict() {key: weight,...}
         :param collection: dict() {id: {key: weight},...}
@@ -36,6 +42,10 @@ class Helper():
         for (key, value) in model.items():
             res[key] = value.clone()
             for id in collection.keys():
-                res[key] += (1.0 * collection[id][key])
-            res[key] = 1.0 * (res[key].float_precision()) / size
+                if fix_precision:
+                    value = copy.deepcopy(collection[id][key].float_precision())
+                else:
+                    value = copy.deepcopy(collection[id][key])
+                res[key] += (1.0 * value)
+            res[key] = 1.0 * (res[key]) / size
         return collections.OrderedDict(res)

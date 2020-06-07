@@ -2,16 +2,27 @@
 # -*- coding:utf-8 -*-
 
 __author__ = 'homeway'
-__copyright__ = 'Copyright © 2019/11/22, homeway'
+__copyright__ = 'Copyright © 2020/6/5, homeway'
 
+import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
-from collections import OrderedDict
+from torch.autograd import Variable
 
 class Model(nn.Module):
     def __init__(self, name, created_time):
         super(Model, self).__init__()
         self.name = name
         self.created_time = created_time
+
+    def xavier_init(self, size):
+        in_dim = size[0]
+        xavier_stddev = 1. / np.sqrt(in_dim / 2.)
+        return torch.nn.Parameter(Variable(torch.randn(*size) * xavier_stddev, requires_grad=True))
+
+    def set_grad(self, grad_tensors):
+        for i, param in enumerate(self.parameters()):
+            param.grad = Variable(param.new().resize_as_(param).zero_())
+            param.grad.data = grad_tensors[i]
 
     def copy_params(self, state_dict):
         own_state = self.state_dict()
@@ -47,17 +58,3 @@ class Model(nn.Module):
                     yield params
             else:
                 yield params
-
-class Credit(Model):
-    def __init__(self, num_features, num_classes, name="", created_time=""):
-        super(Credit, self).__init__(name, created_time)
-        self.linear_blocks = nn.Sequential(
-            nn.Linear(num_features, 64),
-            nn.Dropout2d(0.2),
-            nn.Linear(64, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.linear_blocks(x)
-        x = torch.sigmoid(x)
-        return x
