@@ -4,6 +4,7 @@
 __author__ = 'homeway'
 __copyright__ = 'Copyright © 2020/6/5, homeway'
 
+import os
 import copy
 import torch.optim as optim
 import torch.nn.functional as F
@@ -19,44 +20,37 @@ class AdversaryClient(Client):
     def __init__(self, uid, conf, data_loader):
         super(AdversaryClient, self).__init__(uid, conf, data_loader)
         self.D = Model(self.conf.num_features, self.conf.num_classes).to(self.conf.device)
-        self.G = Generator(num_input=16, num_output=self.conf.num_features).to(self.conf.device)
+        self.G = Generator(num_input=10, num_output=self.conf.num_features).to(self.conf.device)
 
-    def train_GAN(self, parameters, step, lr_G=0.01):
+    def train_GAN(self, parameters, step, lr_G=0.001):
+        # copy model to D
         self.D.copy_params(parameters)
         optimizer_G = optim.Adam(self.G.parameters(), lr=lr_G)
 
         self.G.train()
         for i in range(step):
-            z = Variable(torch.randn(self.conf.batch_size, 15)).to(self.conf.device)
+            z = Variable(torch.randn(self.conf.batch_size, 9)).to(self.conf.device)
             c = Variable(torch.ones([self.conf.batch_size, 1])).to(self.conf.device)
 
-            #c = np.random.randint(0, 2, [self.conf.batch_size, 1])
-            #c = Variable(torch.from_numpy(c).float()).to(self.conf.device)
+            G_sample = self.G(z, c)
+            D_fake = self.D(G_sample)
 
-            G_x = self.G(z, c)
-            D_fake = self.D(G_x)
-
+            # only optimized G
             optimizer_G.zero_grad()
-            loss = -torch.mean(torch.exp(D_fake - 1))
-            #loss = F.cross_entropy(logists, y)
+            loss = -torch.mean(torch.exp(1 - D_fake)) # KL (Kullback–Leibler) divergence
             loss.backward()
             optimizer_G.step()
 
             if i % 100 == 0:
                 print("-> Generator, step:{} loss:{}".format(i, loss))
-
-            if i == 900:
-                print("\n\n")
-                for j in range(G_x.shape[0]):
-                    print(j, G_x[j])
-                    if j > 10: break
-
+        return G_sample
 
     def update(self, parameters):
         print("\n<-------------------- Adversary client at attack mode -------------------->")
 
         self.global_params = copy.deepcopy(parameters)
-        self.train_GAN(parameters=self.global_params, step=1000)
+        G_sample = self.train_GAN(parameters=self.global_params, step=10)
+        np.save(os.path.join(self.conf.output_path, "G_sample.npy"), G_sample.detach().numpy())
 
         self.model.copy_params(self.global_params)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.conf.fed_learning_rate)

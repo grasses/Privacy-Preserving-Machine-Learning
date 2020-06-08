@@ -21,7 +21,7 @@ class Party():
 
 class Conf():
     ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     dataset = "uci_credit"
     scope_name = ""
@@ -37,14 +37,14 @@ class Conf():
     num_classes = 2
 
     # federated learning
-    num_round = 20
+    num_round = 20000
     num_clients = 2
     num_per_round = 2
     fed_epoch = 10
     fed_learning_rate = 0.02
     fed_clients = {}
     fed_aggregate = "avg"
-    fed_partition = "vertical"  # data partition: horizontal/vertical
+    fed_partition = "horizontal"  # data partition: horizontal/vertical
     fed_horizontal = {
         "encrypt_weight": False
     }

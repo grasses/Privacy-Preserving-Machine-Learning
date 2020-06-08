@@ -30,10 +30,6 @@ class Client():
     def load_batch(self, point):
         x, y = list(self.data_loader)[point]
         x, y = x.to(self.conf.device), y.to(self.conf.device)
-
-        #if self.uid == 0:
-            #print("-> label={} shape={}".format(y.view(-1), y.shape))
-
         return x, y
 
     def start_round(self, parameters, mask=None, public_key=None):

@@ -4,11 +4,13 @@
 __author__ = 'homeway'
 __copyright__ = 'Copyright © 2020/5/30, homeway'
 
+import os
 import copy
 import torch.optim as optim
 import torch.nn.functional as F
 from collections import OrderedDict
 from model.horizontal.credit import Credit as Model
+import numpy as np
 
 class Client():
     def __init__(self, uid, conf, data_loader):
@@ -21,6 +23,17 @@ class Client():
     def init(self):
         self.model = Model(self.conf.num_features, self.conf.num_classes).to(self.conf.device)
 
+    def kl_divergence_single(self, p, q):
+        return np.sum(np.where(p != 0, p * np.log(p / q), 0))
+
+    def KL_divergence(self, p, q):
+        """ Epsilon is used here to avoid conditional code for
+        checking that neither P nor Q is equal to 0. """
+        p = np.reshape(p, [-1])
+        q = np.reshape(q, [-1])
+        divergence = np.sum(np.where(p != 0, p * np.log(p / q), 0))
+        return divergence
+
     def update(self, parameters):
         self.global_params = copy.deepcopy(parameters)
         self.model.copy_params(self.global_params)
@@ -30,6 +43,16 @@ class Client():
         for e in range(self.conf.fed_epoch):
             train_loss, train_acc = 0, 0
             for step, (x, y) in enumerate(self.data_loader):
+                if step == 0:
+                    if os.path.exists(os.path.join(self.conf.output_path, "G_sample.npy")):
+                        G_sample = np.load(os.path.join(self.conf.output_path, "G_sample.npy"))
+
+                        #print(G_sample[0], x.numpy()[0])
+
+                        kl = self.KL_divergence(x.numpy(), G_sample)
+                        print("-> KL_divergence output", kl)
+
+
                 x, y = x.to(self.conf.device), y.to(self.conf.device)
                 self.optimizer.zero_grad()
                 logists = self.model(x)

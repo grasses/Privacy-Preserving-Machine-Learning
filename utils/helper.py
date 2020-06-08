@@ -9,6 +9,7 @@ import copy
 import collections
 import argparse
 from config.conf import Conf
+import numpy as np
 
 class Helper():
     def __init__(self, conf=None):
@@ -30,6 +31,16 @@ class Helper():
             if not os.path.exists(path):
                 os.makedirs(path)
         return self.conf
+
+    def KL_divergence(self, P, Q):
+        """ Epsilon is used here to avoid conditional code for
+        checking that neither P nor Q is equal to 0. """
+        epsilon = 0.00001
+        # You may want to instead make copies to avoid changing the np arrays.
+        P = P + epsilon
+        Q = Q + epsilon
+        divergence = np.sum(P * np.log(P / Q))
+        return divergence
 
     def weights_avg(self, model, collection, fix_precision=False):
         '''
