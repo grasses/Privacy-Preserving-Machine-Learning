@@ -6,11 +6,12 @@ __copyright__ = 'Copyright © 2020/5/31, homeway'
 
 import copy
 import numpy as np
+from collections import defaultdict
+
 
 def split_data(data, label, num_clients, num_classes, alpha=0.9):
     np.random.seed(100)
     data_splited = {}
-    class_size = len(data) / num_classes
     sample_prob = np.random.dirichlet(np.array(num_clients * [alpha]))
 
     for class_ in range(num_classes):
@@ -18,9 +19,11 @@ def split_data(data, label, num_clients, num_classes, alpha=0.9):
             data[np.argwhere(label == class_).squeeze()])
         np.random.shuffle(data_by_class)
         j = 0
+        class_size = len(data_by_class)
         for client in range(num_clients):
             i = min(len(data_by_class), j)
             num_samples = int(round(class_size * sample_prob[client]))
+
             j += num_samples
             sample_image = data_by_class[i:j]
             sample_label = np.array([class_] * len(sample_image))

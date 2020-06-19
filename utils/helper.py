@@ -57,6 +57,26 @@ class Helper():
                     value = copy.deepcopy(collection[id][key].float_precision())
                 else:
                     value = copy.deepcopy(collection[id][key])
-                res[key] += (1.0 * value)
+                res[key] += value
             res[key] = 1.0 * (res[key]) / size
         return collections.OrderedDict(res)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

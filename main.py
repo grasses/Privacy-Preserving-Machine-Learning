@@ -8,11 +8,11 @@ import torch
 import syft as sy
 from utils.helper import Helper
 from data.uci import Data
-from fed.horizontal.adv_client import AdversaryClient
 
 def run_horizontal(conf, helper):
     from fed.horizontal.client import Client
     from fed.horizontal.server import Server
+    from fed.horizontal.adv_client import AdversaryClient
     from model.horizontal.credit import Credit as Model
 
     # syft initial
@@ -29,9 +29,9 @@ def run_horizontal(conf, helper):
     # federated client
     for uid in range(conf.num_clients):
         if uid == 0:
-            conf.fed_clients[uid] = AdversaryClient(uid, conf, data.data_loader[i])
+            conf.fed_clients[uid] = AdversaryClient(uid, conf, data.data_loader[uid])
         else:
-            conf.fed_clients[uid] = Client(uid, conf, data.data_loader[i])
+            conf.fed_clients[uid] = Client(uid, conf, data.data_loader[uid])
 
     # federated server
     server = Server(conf, data)
@@ -56,7 +56,7 @@ def run_vertical(conf, helper):
 
     # data initial
     data = Data(conf)
-    data.load_data()
+    data.load_data(factor=0.8)
 
     # federated client
     for uid, party in conf.fed_vertical["party"].items():

@@ -6,6 +6,7 @@ __copyright__ = 'Copyright © 2020/5/30, homeway'
 
 import os
 import copy
+import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from collections import OrderedDict
@@ -37,32 +38,45 @@ class Client():
     def update(self, parameters):
         self.global_params = copy.deepcopy(parameters)
         self.model.copy_params(self.global_params)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.conf.fed_learning_rate)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.conf.learning_rate)
 
         self.model.train()
+        U_dataset = {0: None, 1: None}
         for e in range(self.conf.fed_epoch):
             train_loss, train_acc = 0, 0
             for step, (x, y) in enumerate(self.data_loader):
+                idx0 = torch.where(y == 0)[0]
+                idx1 = torch.where(y == 1)[0]
+                if e == 0 and step == 0:
+                    U_dataset[0] = x[idx0]
+                    U_dataset[1] = x[idx1]
+                elif e == 0 and step > 0:
+                    U_dataset[0] = torch.cat((U_dataset[0], x[idx0]))
+                    U_dataset[1] = torch.cat((U_dataset[1], x[idx1]))
+
                 if step == 0:
                     if os.path.exists(os.path.join(self.conf.output_path, "G_sample.npy")):
                         G_sample = np.load(os.path.join(self.conf.output_path, "G_sample.npy"))
 
-                        #print(G_sample[0], x.numpy()[0])
-
-                        kl = self.KL_divergence(x.numpy(), G_sample)
-                        print("-> KL_divergence output", kl)
-
-
                 x, y = x.to(self.conf.device), y.to(self.conf.device)
                 self.optimizer.zero_grad()
                 logists = self.model(x)
+
+                #if step % 10 == 0:
+                #    print(f"-> logists={logists[:10]}")
                 loss = F.cross_entropy(logists, y)
                 loss.backward()
-
                 pred = logists.argmax(dim=1, keepdim=True)
+
+                if True and step % 10 == 0:
+                    print(f"pred={pred.view(-1)[:10]} y={y.view(-1)[:10]}")
                 train_acc += pred.eq(y.view_as(pred)).sum().item()
                 train_loss += F.cross_entropy(logists, y, reduction='sum').item()
                 self.optimizer.step()
+
+        np.save(os.path.join(self.conf.output_path, "victim_0.npy"), U_dataset[0].cpu().numpy())
+        np.save(os.path.join(self.conf.output_path, "victim_1.npy"), U_dataset[1].cpu().numpy())
+
         print("-> client{:d} finish! train_loss={:.3f} train_acc={:.1f}%".format(
             self.uid,
             train_loss / len(self.data_loader.dataset),
@@ -71,7 +85,7 @@ class Client():
 
         if self.conf.fed_horizontal["encrypt_weight"]:
             return self.encrypted_model(self.model)
-        return self.model.state_dict()
+        return copy.deepcopy(self.model.state_dict())
 
     def encrypted_model(self, model):
         spdz_weights = OrderedDict()

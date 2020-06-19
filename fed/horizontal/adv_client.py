@@ -27,6 +27,7 @@ class AdversaryClient(Client):
         self.D.copy_params(parameters)
         optimizer_G = optim.Adam(self.G.parameters(), lr=lr_G)
 
+        G_dataset = None
         self.G.train()
         for i in range(step):
             z = Variable(torch.randn(self.conf.batch_size, 9)).to(self.conf.device)
@@ -41,19 +42,25 @@ class AdversaryClient(Client):
             loss.backward()
             optimizer_G.step()
 
-            if i % 100 == 0:
+            if i == 0:
+                G_dataset = G_sample.detach().cpu().numpy()
+            else:
+                G_dataset = np.concatenate((G_dataset, G_sample.detach().cpu().numpy()), axis=0)
+
+            if i > 0 and i % 10 == 0:
                 print("-> Generator, step:{} loss:{}".format(i, loss))
-        return G_sample
+
+            np.save(os.path.join(self.conf.output_path, "G_sample.npy"), G_dataset)
+        return G_dataset
 
     def update(self, parameters):
         print("\n<-------------------- Adversary client at attack mode -------------------->")
 
         self.global_params = copy.deepcopy(parameters)
-        G_sample = self.train_GAN(parameters=self.global_params, step=10)
-        np.save(os.path.join(self.conf.output_path, "G_sample.npy"), G_sample.detach().numpy())
+        G_dataset = self.train_GAN(parameters=self.global_params, step=1)
 
         self.model.copy_params(self.global_params)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.conf.fed_learning_rate)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.conf.learning_rate)
         self.model.train()
         for e in range(self.conf.fed_epoch):
             train_loss, train_acc = 0, 0
