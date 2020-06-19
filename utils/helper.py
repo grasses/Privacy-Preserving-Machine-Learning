@@ -26,7 +26,7 @@ class Helper():
     def init(self):
         self.conf = __import__("config." + self.args.config, globals(), locals(), ["Conf"]).Conf
         # build setup path
-        init_path = [self.conf.model_path, self.conf.output_path]
+        init_path = [self.conf.output_path]
         for path in init_path:
             if not os.path.exists(path):
                 os.makedirs(path)

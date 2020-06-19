@@ -26,11 +26,10 @@ class Conf():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     dataset = "uci_credit"
-    scope_name = ""
+    scope_name = dataset
     data_root = os.path.join(ROOT, "data")
     data_path = os.path.join(data_root, dataset)
-    model_path = os.path.join(ROOT, "model")
-    output_path = os.path.join(ROOT, "output")
+    output_path = os.path.join(ROOT, "output", scope_name)
 
     # machine learning
     batch_size = 500
@@ -43,12 +42,12 @@ class Conf():
     num_round = 100
     num_clients = 2
     num_per_round = 2
-    fed_epoch = 20
     fed_clients = {}
     fed_aggregate = "avg"
     fed_partition = "vertical"  # data partition: horizontal/vertical
     fed_horizontal = {
-        "encrypt_weight": False
+        "encrypt_weight": False,
+        "local_epoch": 20
     }
     fed_vertical = {
         "party": {

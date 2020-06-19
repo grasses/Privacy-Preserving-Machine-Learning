@@ -7,7 +7,8 @@ __copyright__ = 'Copyright © 2020/5/30, homeway'
 import torch
 import syft as sy
 from utils.helper import Helper
-from data.uci import Data
+#from data.uci import Data
+from data.digist import Data
 
 def run_horizontal(conf, helper):
     from fed.horizontal.client import Client
@@ -56,7 +57,7 @@ def run_vertical(conf, helper):
 
     # data initial
     data = Data(conf)
-    data.load_data(factor=0.8)
+    data.load_data(alpha=0.8)
 
     # federated client
     for uid, party in conf.fed_vertical["party"].items():

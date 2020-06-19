@@ -73,6 +73,8 @@ class Client():
     def loss_step3(self, u, v, w):
         """exec by A"""
         uv = self.model.loss_step3(self.y, u, v)
+        print(f"-> uv={uv.shape} w={w.shape}")
+
         loss = torch.log(torch.tensor([2.0]).to(self.conf.device) + ((w + uv) / self.y.shape[0]).view(-1))
         return loss
 
@@ -83,6 +85,23 @@ class Client():
         return self.model(self.x)
 
     def batch_evaluation(self, logists, step=0, result={}):
+        if self.conf.num_classes <= 2:
+            return self.binary_batch_evaluation(logists, step, result)
+        label = copy.deepcopy(self.y)
+        label = label.argmax(dim=1, keepdim=True).view(-1)
+        output = F.softmax(logists, dim=1)
+
+        loss = F.cross_entropy(output, label, reduction="mean")
+        pred = output.argmax(dim=1, keepdim=True)
+        acc = 100.0 * pred.eq(label.view_as(pred)).sum() / len(output)
+
+        result["acc"].append(float(acc))
+        result["loss"].append(float(loss))
+        result["step"].append(step)
+        print(f"-> logist.shape={logists.shape} label.shape={label.shape}\n-> logist={logists[:5].data}\n-> pred={pred.view(-1)[:15]}\n-> y={label.view(-1)[:15]}")
+        print(f"-> step={step} train_loss={loss} train_acc={acc}%\n")
+
+    def binary_batch_evaluation(self, logists, step=0, result={}):
         label = copy.deepcopy(self.y)
         idx = torch.where(label == -1)[0]
         label[idx] = 0

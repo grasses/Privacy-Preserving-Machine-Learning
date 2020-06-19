@@ -38,8 +38,8 @@ class Arbiter():
             self.model[uid] = Model(party.num_features, party.num_output, weight=weight[uid]).to(self.conf.device)
             self.optimizer[uid] = optim.SGD(self.model[uid].parameters(), lr=self.conf.learning_rate, momentum=self.conf.momentum)
 
-    def run(self, preview=20):
-        result_dict = {"loss": [9999], "acc": [0], "step": [0]}
+    def run(self, preview=10):
+        result_dict = {"loss": [], "acc": [], "step": []}
         total_step = self.conf.num_round * self.conf.fed_vertical["num_steps"]
         for step in range(total_step):
             print(f"\n\n\n<-------------------------- Step: [{step}/{total_step}] -------------------------->")
@@ -59,10 +59,12 @@ class Arbiter():
                 self.optimizer[uid].step()
 
             # calculate loss
+            '''
             u, u_prime = self.fed_clients[0].loss_step1()
             v, w = self.fed_clients[1].loss_step2(u, u_prime)
             loss = self.fed_clients[0].loss_step3(u, v, w)
             print(f"-> [{step}/{total_step}] loss={loss.cpu().detach().numpy()}")
+            '''
 
             # run a batch forward
             if step % preview == 0:
@@ -70,7 +72,7 @@ class Arbiter():
                 logists = []
                 for uid, party in self.party.items():
                     logists.append(self.fed_clients[uid].forward().float())
-                logists = torch.sigmoid(logists[0] + logists[1])
+                logists = logists[0] + logists[1] #torch.sigmoid(logists[0] + logists[1])
                 self.fed_clients[0].batch_evaluation(logists, step, result=result_dict)
 
             if step > 0 and step % preview == 0:
