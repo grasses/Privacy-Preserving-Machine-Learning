@@ -8,10 +8,15 @@ import os
 import random
 import torch
 import numpy as np
-random.seed(100)
-np.random.seed(100)
-torch.manual_seed(100)
-torch.cuda.manual_seed(100)
+import datetime
+
+seed = 100
+random.seed(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+format_time = str(datetime.datetime.now().strftime('%m%d%H%M%S'))
+
 
 class Party():
     def __init__(self, uid, num_feature=10, num_output=1):
@@ -21,17 +26,8 @@ class Party():
         self.public_key = None
         self.secret_key = None
 
+
 class Conf():
-    ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    logger = "warn"
-    dataset = "digist"
-    scope_name = dataset
-    data_root = os.path.join(ROOT, "data")
-    data_path = os.path.join(data_root, dataset)
-    output_path = os.path.join(ROOT, "output", scope_name)
-
     # machine learning
     batch_size = 500
     momentum = 0.8
@@ -45,7 +41,7 @@ class Conf():
     num_per_round = 2
     fed_clients = {}
     fed_aggregate = "avg"
-    fed_partition = "vertical"  # data partition: horizontal/vertical
+    fed_partition = "horizontal"  # data partition: horizontal/vertical
     fed_horizontal = {
         "encrypt_weight": False,
         "local_epoch": 20
@@ -63,6 +59,12 @@ class Conf():
     syft_hook = None
     syft_clients = {}
     syft_crypto_provider = None
+
+    # system
+    logger = "warn"
+    dataset = "digist"
+    scope_name = f"{dataset}_{fed_partition}_{format_time}"
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 

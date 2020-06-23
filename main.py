@@ -29,7 +29,7 @@ def run_horizontal(conf, helper):
 
     # federated client
     for uid in range(conf.num_clients):
-        if uid == 0:
+        if uid == 0 and False:
             conf.fed_clients[uid] = AdversaryClient(uid, conf, data.data_loader[uid])
         else:
             conf.fed_clients[uid] = Client(uid, conf, data.data_loader[uid])

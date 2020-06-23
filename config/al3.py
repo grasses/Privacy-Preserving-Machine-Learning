@@ -4,18 +4,12 @@
 __author__ = 'homeway'
 __copyright__ = 'Copyright © 2020/5/31, homeway'
 
+import os
 import random
 import torch
-import numpy as np
-import datetime
-
-seed = 100
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed)
-format_time = str(datetime.datetime.now().strftime('%m%d%H%M%S'))
-
+random.seed(100)
+torch.manual_seed(100)
+torch.cuda.manual_seed(100)
 
 class Party():
     def __init__(self, uid, num_feature=10, num_output=1):
@@ -25,33 +19,42 @@ class Party():
         self.public_key = None
         self.secret_key = None
 
-
 class Conf():
+    ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    dataset = "uci_credit"
+    scope_name = ""
+    data_root = os.path.join(ROOT, "data")
+    data_path = os.path.join(data_root, dataset)
+    model_path = os.path.join(ROOT, "model")
+    output_path = os.path.join(ROOT, "output")
+
     # machine learning
-    batch_size = 500
-    momentum = 0.8
+    batch_size = 2
+    momentum = 0.88
     learning_rate = 0.1
-    num_features = 23
+    num_features = 5
     num_classes = 2
 
     # federated learning
-    num_round = 100
+    num_round = 20000
     num_clients = 2
     num_per_round = 2
+    fed_epoch = 20
     fed_clients = {}
     fed_aggregate = "avg"
     fed_partition = "vertical"  # data partition: horizontal/vertical
     fed_horizontal = {
-        "encrypt_weight": False,
-        "local_epoch": 20
+        "encrypt_weight": False
     }
     fed_vertical = {
         "party": {
-            0: Party(0, 13, 1),
-            1: Party(1, 10, 1)
+            0: Party(0, 1, 1),
+            1: Party(1, 3, 1)
         },
-        "split": 13,
-        "num_steps": -1,    # update in dataloader
+        "split": 2,
+        "num_steps": 1,
     }
 
     # syft
@@ -59,11 +62,6 @@ class Conf():
     syft_clients = {}
     syft_crypto_provider = None
 
-    # system
-    logger = "warn"
-    dataset = "credit"
-    scope_name = f"{dataset}_{fed_partition}_{format_time}"
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 

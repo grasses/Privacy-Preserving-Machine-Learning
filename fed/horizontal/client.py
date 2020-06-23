@@ -36,6 +36,21 @@ class Client():
         return divergence
 
     def update(self, parameters):
+        """
+        Batch-based Federated Learning: submit each batch
+        """
+        self.global_params = copy.deepcopy(parameters)
+        self.model.copy_params(self.global_params)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.conf.learning_rate)
+        self.model.train()
+
+        x, y = next(self.data_loader)
+        print(self.uid, x.shape, y.shape)
+
+        return copy.deepcopy(self.model.state_dict())
+
+
+    def update_epoch(self, parameters):
         self.global_params = copy.deepcopy(parameters)
         self.model.copy_params(self.global_params)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.conf.learning_rate)

@@ -34,7 +34,7 @@ class AdversaryClient(Client):
             c = Variable(torch.ones([self.conf.batch_size, 1])).to(self.conf.device)
 
             G_sample = self.G(z, c)
-            D_fake = self.D(G_sample)
+            D_fake = self.D(G_sample.detach())
 
             # only optimized G
             optimizer_G.zero_grad()

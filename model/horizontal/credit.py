@@ -12,9 +12,8 @@ class Credit(Model):
     def __init__(self, num_features, num_classes, name="", created_time=""):
         super(Credit, self).__init__(name, created_time)
         self.linear_blocks = nn.Sequential(
-            nn.Linear(num_features, 32),
-            nn.Dropout2d(0.4),
-            nn.Linear(32, num_classes)
+            nn.Linear(num_features, num_classes),
+            #nn.Linear(32, num_classes)
         )
 
     def forward(self, x):

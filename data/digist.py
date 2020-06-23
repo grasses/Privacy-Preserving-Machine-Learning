@@ -34,6 +34,7 @@ class Dataset(TorchDataSet):
     def __len__(self):
         return len(self.x)
 
+
 class Data():
     def __init__(self, conf=Conf):
         self.conf = conf
@@ -45,8 +46,22 @@ class Data():
         self.data_loader = {}
         self.test_loader = None
 
-    def split_horizontal_data(self):
-        pass
+    def split_horizontal_data(self, num_clients, num_classes, batch_size=200):
+        # split data from users
+        self.splited_data = split_data(self.train_x, self.train_y, num_clients, num_classes)
+
+        # build data loader & send to user
+        for uid, item in self.splited_data.items():
+            size = len(item[0])
+            idx = np.random.choice(size, size, replace=False)
+            item[0] = item[0][idx]
+            item[1] = item[1][idx]
+            print("-> send data to client:{}, size:{}".format(uid, len(item[1])))
+            dataset = Dataset(item[0], item[1])
+            self.data_loader[uid] = DataLoader(dataset, batch_size, shuffle=True)
+        # build test loader
+        dataset = Dataset(self.test_x, self.test_y)
+        self.test_loader = DataLoader(dataset, batch_size, shuffle=False)
 
     def split_vertical_data(self, args, batch_size=200):
         # convert to one hot

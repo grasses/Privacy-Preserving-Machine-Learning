@@ -10,6 +10,7 @@ import collections
 import argparse
 from config.conf import Conf
 import numpy as np
+import shutil
 
 class Helper():
     def __init__(self, conf=None):
@@ -24,12 +25,34 @@ class Helper():
         return parser.parse_args()
 
     def init(self):
-        self.conf = __import__("config." + self.args.config, globals(), locals(), ["Conf"]).Conf
-        # build setup path
-        init_path = [self.conf.output_path]
-        for path in init_path:
-            if not os.path.exists(path):
-                os.makedirs(path)
+        train_flag = True
+        try:
+            self.conf = __import__("config.{:s}".format(self.args.config), globals(), locals(), ["Conf"]).Conf
+        except:
+            train_flag = False
+            self.conf = __import__(self.args.config, globals(), locals(), ["Conf"]).Conf
+            self.conf.scope_name = self.args.config.split(".")[-2]
+
+        # set config's attributes
+        ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+        setattr(self.conf, "ROOT", ROOT)
+        setattr(self.conf, "data_root", os.path.join(ROOT, "data"))
+        setattr(self.conf, "data_path", os.path.join(self.conf.data_root, self.conf.dataset))
+        setattr(self.conf, "output_path", os.path.join(ROOT, f"output/{self.conf.scope_name}"))
+        setattr(self.conf, "model_path", os.path.join(ROOT, f"output/{self.conf.scope_name}/model"))
+
+        if train_flag:
+            # build setup path
+            output = os.path.join(self.conf.ROOT, "output")
+            init_path = [output, self.conf.output_path, self.conf.model_path]
+            for path in init_path:
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+            # copy config file
+            conf_path = os.path.join(ROOT, "config/{:s}.py".format(self.args.config))
+            if os.path.exists(conf_path):
+                shutil.copyfile(conf_path, os.path.join(self.conf.output_path, "conf.py"))
         return self.conf
 
     def KL_divergence(self, P, Q):
