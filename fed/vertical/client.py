@@ -18,6 +18,8 @@ class Client():
         self.data_loader = data_loader
         self.global_params = None
         self.public_key = None
+        self.last_x = None
+        self.last_y = None
         self.debug = debug
         self.init()
 
@@ -30,18 +32,22 @@ class Client():
         x, y = x.to(self.conf.device), y.to(self.conf.device)
         return x, y
 
-    def start_round(self, parameters, mask=None, public_key=None):
+    def start_round(self, parameters, batch_data=None, public_key=None):
         self.global_params = copy.deepcopy(parameters)
-        self.model.copy_params(self.global_params)
+        self.model.copy_params(self.global_params[self.uid])
 
-        # TODO: use mask to load batch data
-        self.data_point += 1
-        self.data_point = self.data_point % len(self.data_loader)
-        self.x, self.y = self.load_batch(self.data_point)
-        if public_key is not None:
-            self.public_key = public_key
+        if batch_data is not None:
+            self.x, self.y = batch_data
+        else:
+            # TODO: use mask to load batch data
+            self.data_point += 1
+            self.data_point = self.data_point % len(self.data_loader)
+            self.x, self.y = self.load_batch(self.data_point)
+            if public_key is not None:
+                self.public_key = public_key
 
     def stop_round(self):
+        """TODO: What action?"""
         pass
 
     def grad_step1(self):
@@ -52,13 +58,14 @@ class Client():
     def grad_step2(self, u_prime):
         """exec by B"""
         w, z = self.model.grad_step2(self.x, u_prime)
-        return w, z
+        n = 1.0 / self.x.shape[0]
+        return w, n * z.t()
 
     def grad_step3(self, w, z):
         """exec by A"""
         z_prime = self.model.grad_step3(self.x, w)
-        n = 1.0 / self.conf.batch_size
-        return n * z_prime.t(), n * z.t()
+        n = 1.0 / self.x.shape[0]
+        return n * z_prime.t(), z
 
     def loss_step1(self):
         """exec by A"""

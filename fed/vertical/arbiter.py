@@ -38,15 +38,24 @@ class Arbiter():
             self.model[uid] = Model(party.num_features, party.num_output, weight=weight[uid]).to(self.conf.device)
             self.optimizer[uid] = optim.SGD(self.model[uid].parameters(), lr=self.conf.learning_rate, momentum=self.conf.momentum)
 
+    def get_parameters(self):
+        """
+        :return: parameters {uid: state_dict}
+        """
+        parameters = {0: None, 1: None}
+        for uid, party in self.party.items():
+            parameters[uid] = self.model[uid].state_dict()
+        return parameters
+
     def run(self, preview=10):
         result_dict = {"loss": [], "acc": [], "step": []}
         total_step = self.conf.num_round * self.conf.fed_vertical["num_steps"]
         for step in range(total_step):
             print(f"\n\n\n<-------------------------- Step: [{step}/{total_step}] -------------------------->")
+
             # start round for all parties
             for uid, party in self.party.items():
-                parameters = self.model[uid].state_dict()
-                self.fed_clients[uid].start_round(parameters)
+                self.fed_clients[uid].start_round(self.get_parameters())
 
             # three steps for grad
             u_prime = self.fed_clients[0].grad_step1()
@@ -58,6 +67,14 @@ class Arbiter():
                 self.model[uid].set_grad([grad[uid]])
                 self.optimizer[uid].step()
 
+            # start attack
+            if step in self.conf.fed_vertical["attack_steps"]:
+                self.fed_clients[0].attack_gradient_leakage(grad, self.conf.fed_vertical["num_attack"])
+
+            # stop round for all parties
+            for uid, party in self.party.items():
+                self.fed_clients[uid].stop_round()
+
             # calculate loss
             '''
             u, u_prime = self.fed_clients[0].loss_step1()
@@ -68,7 +85,7 @@ class Arbiter():
 
             # run a batch forward
             if step % preview == 0:
-                print(f"-> grad0={grad[0]}\n-> grad1={grad[1]}\n")
+                #print(f"-> grad0={grad[0]}\n-> grad1={grad[1]}\n")
                 logists = []
                 for uid, party in self.party.items():
                     logists.append(self.fed_clients[uid].forward().float())

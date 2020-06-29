@@ -51,7 +51,9 @@ class Conf():
             1: Party(1, 10, 1)
         },
         "split": 13,
-        "num_steps": -1,    # update in dataloader
+        "num_steps": -1,        # update in dataloader
+        "num_attack": 300,      # iteration of attack
+        "attack_steps": [1]     # selected attack steps
     }
 
     # syft

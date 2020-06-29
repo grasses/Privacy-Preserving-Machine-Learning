@@ -29,7 +29,7 @@ class Party():
 
 class Conf():
     # machine learning
-    batch_size = 500
+    batch_size = 1
     momentum = 0.8
     learning_rate = 0.1
     num_features = 64
@@ -41,7 +41,7 @@ class Conf():
     num_per_round = 2
     fed_clients = {}
     fed_aggregate = "avg"
-    fed_partition = "horizontal"  # data partition: horizontal/vertical
+    fed_partition = "vertical"  # data partition: horizontal/vertical
     fed_horizontal = {
         "encrypt_weight": False,
         "local_epoch": 20
@@ -52,7 +52,9 @@ class Conf():
             1: Party(1, 34, num_classes)
         },
         "split": 30,
-        "num_steps": -1,    # update in dataloader
+        "num_steps": -1,        # update in dataloader
+        "num_attack": 300,      # iteration of attack
+        "attack_steps": [1]     # selected attack steps
     }
 
     # syft
