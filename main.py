@@ -43,6 +43,7 @@ def run_vertical(conf, helper):
         Follow paper `Private federated learning on vertically partitioned data via entity resolution and additively homomorphic encryption`
     '''
     from fed.vertical.client import Client
+    from fed.vertical.adv_client import AdversaryClient
     from fed.vertical.arbiter import Arbiter
 
     # syft initial
@@ -60,8 +61,12 @@ def run_vertical(conf, helper):
     data.load_data(alpha=0.8)
 
     # federated client
+    if_attack = len(conf.fed_vertical["attack_steps"]) > 0
     for uid, party in conf.fed_vertical["party"].items():
-        conf.fed_clients[uid] = Client(uid, conf, data.data_loader[uid], party)
+        if uid == 0 and if_attack:
+            conf.fed_clients[uid] = AdversaryClient(uid, conf, data.data_loader[uid], party)
+        else:
+            conf.fed_clients[uid] = Client(uid, conf, data.data_loader[uid], party)
 
     # federated arbiter
     server = Arbiter(conf, data)
